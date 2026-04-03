@@ -2,7 +2,7 @@ const userModel = require("../models/user.model");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
-const jwt_secret = process.env.JWT_SECRET;
+
 
 exports.addUser = async (req, res) => {
   const { ...data } = req.body;
@@ -31,6 +31,7 @@ exports.addUser = async (req, res) => {
       return res.status(400).json("invalid role");
     if (data.status != "active" && data.status != "inactive")
       return res.status(400).json("invalid status type!");
+    if(data.password.length < 6) return res.status(400).json("Password must be long than 6 characters");
 
     const existingUser = await userModel.findOne({ email: data.email });
     if (existingUser) return res.status(400).json("User already exists");
@@ -80,15 +81,17 @@ exports.login = async (req, res) => {
       password,
       existingUser.password,
     );
+  
+    
     if (!validPassword)
       return res.status(401).json({ message: "Invalid credentials" });
-
-    const token = jwt.sign(
+    
+    const token =  jwt.sign(
       {
         id: existingUser._id,
         role: existingUser.role,
       },
-      jwt_secret,
+      process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
 
@@ -106,6 +109,7 @@ exports.login = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json("Internal Server error!");
   }
 };
