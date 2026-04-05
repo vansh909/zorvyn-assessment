@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+//schema for financial records
 const financialRecords = new mongoose.Schema({
     userId:{
         type: mongoose.Schema.Types.ObjectId,

@@ -7,6 +7,7 @@ const validator = require("validator");
 exports.addUser = async (req, res) => {
   const { ...data } = req.body;
   try {
+    //validation of inputs
     if (
       !data.email ||
       !data.username ||
@@ -26,7 +27,7 @@ exports.addUser = async (req, res) => {
       typeof data.status != "string"
     )
       return res.status(400).json("Invalid input provided!");
-
+    //validation of role and status
     if (data.role != "admin" && data.role != "analyst" && data.role != "viewer")
       return res.status(400).json("invalid role");
     if (data.status != "active" && data.status != "inactive")
@@ -35,7 +36,7 @@ exports.addUser = async (req, res) => {
 
     const existingUser = await userModel.findOne({ email: data.email });
     if (existingUser) return res.status(400).json("User already exists");
-
+    //hashing password
     const hashedpassword = await bcryptjs.hash(data.password, 10);
 
     let newUser = new userModel({
@@ -45,7 +46,7 @@ exports.addUser = async (req, res) => {
       role: data.role,
       status: data.status,
     });
-
+    //saving user to database
     await newUser.save();
 
     return res.status(201).json({
@@ -66,6 +67,7 @@ exports.addUser = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    //validation of inputs
     if (!email || !password) return res.status(400).json("Invalid input!");
     if (typeof email != "string" || typeof password != "string")
       return res
@@ -85,7 +87,7 @@ exports.login = async (req, res) => {
     
     if (!validPassword)
       return res.status(401).json({ message: "Invalid credentials" });
-    
+    //generating token
     const token =  jwt.sign(
       {
         id: existingUser._id,
@@ -94,7 +96,7 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
-
+    //sending token in the cookie
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 3600000,
@@ -118,6 +120,7 @@ exports.getAllUsers = async (req, res) => {
   const user = req.user;
 
   try {
+    //only admin can view all users
     if (user.role != "admin")
       return res.status(403).json({ message: "unauthorized" });
 
@@ -140,9 +143,12 @@ exports.changeUserRole = async (req, res) => {
     if (user.role != "admin") return res.status(403).json("Unauthorized!");
     if (typeof newRole != "string")
       return res.status(400).json("Invalid input type!");
+
+    //validation of role
     if (newRole != "admin" && newRole != "viewer" && newRole != "analyst")
       return res.status(400).json("invalid data!");
 
+    //updating role of user
     const changedUser = await userModel.findByIdAndUpdate(
       id,
       { role: newRole },
@@ -169,6 +175,7 @@ exports.changeUserStatus = async (req, res) => {
     if (newStatus != "active" && newStatus != "inactive")
       return res.status(403).json("Invalid status provided!");
 
+    //updating status of user
     let changedUser = await userModel.findByIdAndUpdate(
       id,
       { status: newStatus },

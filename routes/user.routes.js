@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+//importing controllers and middlewares
 const {
   addUser,
   login,

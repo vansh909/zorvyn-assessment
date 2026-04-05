@@ -1,15 +1,17 @@
 const financialRecordModel = require("../models/records.model");
 const userModel = require("../models/user.model");
 const validator = require("validator");
-
+//add record
 exports.addRecord = async (req, res) => {
   const user = req.user;
   const { ...data } = req.body;
 
   try {
+    //viewer cannot add records
     if (user.role !== "analyst" && user.role !== "admin")
       return res.status(403).json({ message: "Unauthorized" });
 
+    //validation
     if (!data.amount || !data.type || !data.category)
       return res.status(400).json({ message: "Missing required fields" });
 
@@ -28,7 +30,7 @@ exports.addRecord = async (req, res) => {
         if (!validator.isEmail(data.email)) {
           return res.status(400).json({ message: "Invalid email" });
         }
-
+        //checking if user with email exists
         const targetUser = await userModel.findOne({ email: data.email });
 
         if (!targetUser) {
@@ -39,7 +41,7 @@ exports.addRecord = async (req, res) => {
         userId = user.id;
       }
     }
-
+    //creating record
     const newRecord = new financialRecordModel({
       amount: data.amount,
       type: data.type,
@@ -58,6 +60,7 @@ exports.addRecord = async (req, res) => {
   }
 };
 
+//view records
 exports.viewRecords = async (req, res) => {
   const user = req.user;
   try {
@@ -84,12 +87,15 @@ exports.viewRecords = async (req, res) => {
   }
 };
 
+
+
 exports.updateRecords = async (req, res) => {
   const recordId = req.params.id;
   const user = req.user;
   const { ...data } = req.body;
 
   try {
+    //viewer cannot update records
     if (user.role == "viewer")
       return res
         .status(403)
@@ -98,13 +104,14 @@ exports.updateRecords = async (req, res) => {
     let record = await financialRecordModel.findById(recordId);
     if (!record) return res.status(404).json("Record not found!");
 
+    //analyst can update only their records
     if (user.role == "analyst") {
       if (record.userId.toString() != user.id)
         return res
           .status(403)
           .json({ message: "Invalid! you can only update your records" });
     }
-
+    //updating records
     let updatedRecord = await financialRecordModel.findByIdAndUpdate(
       recordId,
       {
@@ -155,3 +162,60 @@ exports.deleteRecords = async (req, res) => {
   }
 };
 
+exports.filterRecords = async(req, res)=>{
+    const user = req.user;
+    const { type, category, startDate, endDate } = req.query;
+
+    try {
+
+        let filter = {};
+
+        //role-based access
+        if(user.role === 'admin'){
+            filter = {};
+        }
+        else{
+            filter = { userId: user.id };
+        }
+
+        //type filter
+        if(type){
+            filter.type = type;
+        }
+
+        //category filter
+        if(category){
+            filter.category = category;
+        }
+
+        //date range filter
+        if(startDate || endDate){
+            filter.date = {};
+
+            if(startDate){
+                filter.date.$gte = new Date(startDate);
+            }
+
+            if(endDate){
+                filter.date.$lte = new Date(endDate);
+            }
+        }
+
+        const records = await financialRecordModel.find(filter);
+
+        if(records.length === 0){
+            return res.status(200).json({
+                message: "No records found",
+                records: []
+            });
+        }
+
+        return res.status(200).json({
+            message: "Filtered records fetched successfully",
+            records
+        });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}

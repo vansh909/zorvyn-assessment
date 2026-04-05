@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-
+//middleware to protect routes
 exports.authMiddleware = async(req, res, next)=>{
     const token = req.cookies.token;
     try {

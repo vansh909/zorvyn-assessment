@@ -5,36 +5,25 @@ const validator = require("validator");
 exports.getDashboard = async(req, res)=>{
     const user = req.user;
     const { email } = req.body;
-    const userIdFromParams = req.params.id;
 
     try {
 
         let filter = {};
 
-        // 👑 admin
-        if(user.role == 'admin'){
-            if(email){
-                if(!validator.isEmail(email))
-                    return res.status(400).json("Invalid email!");
+        // admin via email
+        if(email){
 
-                const targetUser = await userModel.findOne({ email: email });
-                if(!targetUser) return res.status(404).json("User not found!");
+            if(!validator.isEmail(email))
+                return res.status(400).json("Invalid email!");
 
-                filter = { userId: targetUser._id };
-            }
-            else{
-                filter = {};
-            }
+            const targetUser = await userModel.findOne({ email: email });
+            if(!targetUser) return res.status(404).json("User not found!");
+
+            filter = { userId: targetUser._id };
         }
 
-        // 📊 analyst / 👁️ viewer
+        // 📊 sabke liye (analyst / viewer / admin without email)
         else{
-            if(!userIdFromParams)
-                return res.status(400).json("User ID required in params!");
-
-            if(userIdFromParams != user.id)
-                return res.status(403).json("Unauthorized!");
-
             filter = { userId: user.id };
         }
 
@@ -62,7 +51,6 @@ exports.getDashboard = async(req, res)=>{
 
         records.forEach((record)=>{
 
-            // totals
             if(record.type === 'income'){
                 totalIncome += record.amount;
             }
@@ -70,7 +58,7 @@ exports.getDashboard = async(req, res)=>{
                 totalExpense += record.amount;
             }
 
-            // category-wise
+            // category
             if(!categoryTotals[record.category]){
                 categoryTotals[record.category] = {
                     income: 0,
@@ -85,7 +73,7 @@ exports.getDashboard = async(req, res)=>{
                 categoryTotals[record.category].expense += record.amount;
             }
 
-            // 🔥 monthly trends
+            // monthly
             const month = new Date(record.date).toLocaleString('default', { month: 'short', year: 'numeric' });
 
             if(!monthlyTrends[month]){
@@ -105,7 +93,6 @@ exports.getDashboard = async(req, res)=>{
 
         const balance = totalIncome - totalExpense;
 
-        // 🔥 recent
         const recent = records
             .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0,5);
