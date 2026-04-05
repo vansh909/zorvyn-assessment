@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Router();
+const router = express.Router(); //router for user related routes
 
 //importing controllers and middlewares
 const {

@@ -3,7 +3,7 @@ const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const validator = require("validator");
 
-
+//adding new user (only admin can add new user)
 exports.addUser = async (req, res) => {
   const { ...data } = req.body;
   try {
@@ -46,9 +46,11 @@ exports.addUser = async (req, res) => {
       role: data.role,
       status: data.status,
     });
+
     //saving user to database
     await newUser.save();
 
+    //returning the user details in response
     return res.status(201).json({
       message: "new user created",
       userDetails: {
@@ -64,6 +66,8 @@ exports.addUser = async (req, res) => {
   }
 };
 
+
+//login user and generating token using jsonwebtoken
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -76,9 +80,11 @@ exports.login = async (req, res) => {
 
     const existingUser = await userModel.findOne({ email: email });
     if (!existingUser) return res.status(404).json("User not found!");
-
+  
     if (existingUser.status !== "active")
       return res.status(403).json({ message: "User is inactive" });
+
+    //comparing password using bcryptjs
     const validPassword = await bcryptjs.compare(
       password,
       existingUser.password,
@@ -87,7 +93,8 @@ exports.login = async (req, res) => {
     
     if (!validPassword)
       return res.status(401).json({ message: "Invalid credentials" });
-    //generating token
+
+    //generating token using jsonwebtoken
     const token =  jwt.sign(
       {
         id: existingUser._id,
@@ -102,6 +109,7 @@ exports.login = async (req, res) => {
       maxAge: 3600000,
     });
 
+    //returning the user details in response
     return res.status(200).json({
       message: `welcome ${existingUser.role}`,
       user: {
@@ -116,6 +124,8 @@ exports.login = async (req, res) => {
   }
 };
 
+
+//details of  all users (only admin can view all users)
 exports.getAllUsers = async (req, res) => {
   const user = req.user;
 
@@ -127,6 +137,8 @@ exports.getAllUsers = async (req, res) => {
     let users = await userModel.find({}, "-password");
     if (users.length == 0)
       return res.status(404).json({ message: "no users to display" });
+
+    //returning the user details in response
     return res
       .status(200)
       .json({ message: "All users retrieved!", users: users });
@@ -135,11 +147,13 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+//changing role of user (only admin can change role of user)
 exports.changeUserRole = async (req, res) => {
   const user = req.user;
   const {id} = req.params;
   const  {newRole } = req.body;
   try {
+    //only admin can change role of user
     if (user.role != "admin") return res.status(403).json("Unauthorized!");
     if (typeof newRole != "string")
       return res.status(400).json("Invalid input type!");
@@ -154,6 +168,8 @@ exports.changeUserRole = async (req, res) => {
       { role: newRole },
       { new: true, runValidators: true },
     );
+
+    //returning the new role of user in response
     return res.status(201).json({
       message: "User role changed successfully",
       newRole: changedUser.role,
@@ -163,6 +179,8 @@ exports.changeUserRole = async (req, res) => {
   }
 };
 
+
+//changing status of user (only admin can change status of user)
 exports.changeUserStatus = async (req, res) => {
   const user = req.user;
   const {id} = req.params;
@@ -181,6 +199,8 @@ exports.changeUserStatus = async (req, res) => {
       { status: newStatus },
       { new: true, runValidators: true },
     );
+
+    //returning the new status of user in response
     return res.status(200).json({
       message: "Status changed successfully!",
       userDetails: {

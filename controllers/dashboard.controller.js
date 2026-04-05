@@ -1,7 +1,9 @@
 const userModel = require('../models/user.model');
 const financialRecord = require('../models/records.model');
-const validator = require("validator");
+const validator = require("validator"); // for validating email
 
+
+//dashboard data for user - total income, total expense, balance, category wise totals, 5 most recent records and monthly trends (only admin can view dashboard of specific user by email, analyst and viewer can only view their dashboard)
 exports.getDashboard = async(req, res)=>{
     const user = req.user;
     const { email } = req.body;
@@ -10,7 +12,7 @@ exports.getDashboard = async(req, res)=>{
 
         let filter = {};
 
-        // admin via email
+        // admin will have option to view dashboard of specific user by email, analyst and viewer can only view their dashboard
         if(email){
 
             if(!validator.isEmail(email))
@@ -22,14 +24,14 @@ exports.getDashboard = async(req, res)=>{
             filter = { userId: targetUser._id };
         }
 
-        // 📊 sabke liye (analyst / viewer / admin without email)
+        // analyst and viewer can only view their dashboard using the id they are coming with in the token
         else{
             filter = { userId: user.id };
         }
 
         const records = await financialRecord.find(filter);
 
-        // 🟢 no records
+        // if no records found for the user, return default values in response
         if(records.length === 0){
             return res.status(200).json({
                 message: "No records found",
@@ -49,6 +51,7 @@ exports.getDashboard = async(req, res)=>{
         let categoryTotals = {};
         let monthlyTrends = {};
 
+        // iterating through records to calculate total income, total expense, balance, category wise totals and monthly trends
         records.forEach((record)=>{
 
             if(record.type === 'income'){
@@ -73,7 +76,7 @@ exports.getDashboard = async(req, res)=>{
                 categoryTotals[record.category].expense += record.amount;
             }
 
-            // monthly
+            // monthly trends - to get month and year from date, we can use toLocaleString method of date object
             const month = new Date(record.date).toLocaleString('default', { month: 'short', year: 'numeric' });
 
             if(!monthlyTrends[month]){
@@ -83,6 +86,7 @@ exports.getDashboard = async(req, res)=>{
                 };
             }
 
+            // calculating monthly trends
             if(record.type === 'income'){
                 monthlyTrends[month].income += record.amount;
             }
@@ -91,12 +95,15 @@ exports.getDashboard = async(req, res)=>{
             }
         });
 
+        // calculating balance
         const balance = totalIncome - totalExpense;
 
+        // getting 5 most recent records by sorting the records based on createdAt field in descending order and slicing the first 5 records
         const recent = records
             .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0,5);
 
+            //returning the dashboard data in response
         return res.status(200).json({
             message: "Dashboard fetched successfully",
             data: {

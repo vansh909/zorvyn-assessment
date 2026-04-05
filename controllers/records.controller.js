@@ -1,11 +1,14 @@
 const financialRecordModel = require("../models/records.model");
 const userModel = require("../models/user.model");
 const validator = require("validator");
-//add record
+
+
+//adding records for all the users
 exports.addRecord = async (req, res) => {
   const user = req.user;
   const { ...data } = req.body;
 
+  //try catch block for error handling
   try {
     //viewer cannot add records
     if (user.role !== "analyst" && user.role !== "admin")
@@ -51,16 +54,17 @@ exports.addRecord = async (req, res) => {
     });
     
     await newRecord.save();
-
+    //returning the record details in response
     return res.status(201).json({
       message: "Record added successfully",
+      recordDetails: newRecord,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-//view records
+//viewing records of the users (analyst can see their records, admin can see all records, viewer cannot see any record)
 exports.viewRecords = async (req, res) => {
   const user = req.user;
   try {
@@ -68,7 +72,7 @@ exports.viewRecords = async (req, res) => {
     if (user.role == "viewer")
       return res.status(403).json({ message: "viewer cannot see records!" });
 
-    //analyst records will be fetched from req.user.id
+    //analyst records will be fetched from req.user.id(he can see only his records)
     if (user.role == "analyst") {
       let records = await financialRecordModel.find({ userId: user.id });
       if (records.length === 0)
@@ -76,8 +80,12 @@ exports.viewRecords = async (req, res) => {
       return res
         .status(200)
         .json({ message: "records fetched successfully", records: records });
+
+        //admin can see all records
     } else if (user.role == "admin") {
       const allRecords = await financialRecordModel.find({});
+
+      //returning all the records in response
       return res
         .status(200)
         .json({ message: "Records fetched successfully", records: allRecords });
@@ -88,7 +96,7 @@ exports.viewRecords = async (req, res) => {
 };
 
 
-
+//updating records (analyst can update only their records, admin can update all records, viewer cannot update any record)
 exports.updateRecords = async (req, res) => {
   const recordId = req.params.id;
   const user = req.user;
@@ -123,6 +131,7 @@ exports.updateRecords = async (req, res) => {
       { new: true, runValidators: true },
     );
 
+    //returning the updated record details in response
     return res.status(200).json({
       message: "record updated successfully!",
       newRecord: updatedRecord,
@@ -132,11 +141,14 @@ exports.updateRecords = async (req, res) => {
   }
 };
 
+
+//deleting records (analyst can delete only their records, admin can delete all records, viewer cannot delete any record)
 exports.deleteRecords = async (req, res) => {
   const recordId = req.params.id;
   const user = req.user;
 
   try {
+    //viewer cannot delete records
     if (user.role == "viewer")
       return res
         .status(403)
@@ -145,13 +157,14 @@ exports.deleteRecords = async (req, res) => {
     let record = await financialRecordModel.findById(recordId);
     if (!record) return res.status(404).json("Record not found!");
 
+    //analyst can delete only their records
     if (user.role == "analyst") {
       if (record.userId.toString() != user.id)
         return res
           .status(403)
           .json({ message: "Invalid! you can only delete your records" });
     }
-
+    //deleting record
     await financialRecordModel.findByIdAndDelete(recordId);
 
     return res.status(200).json({
@@ -162,6 +175,7 @@ exports.deleteRecords = async (req, res) => {
   }
 };
 
+//filtering records based on type, category and date range (analyst can filter only their records, admin can filter all records, viewer cannot filter any record)
 exports.filterRecords = async(req, res)=>{
     const user = req.user;
     const { type, category, startDate, endDate } = req.query;

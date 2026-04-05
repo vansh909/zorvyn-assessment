@@ -90,7 +90,7 @@ JWT_SECRET=jwt_secret
 ## ▶️ Run the Server
 
 ```bash
-npm run dev
+node server.js 
 ```
 
 ---
