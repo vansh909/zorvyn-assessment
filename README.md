@@ -90,7 +90,7 @@ JWT_SECRET=jwt_secret
 ## ▶️ Run the Server
 
 ```bash
-node server.js 
+node server.js
 ```
 
 ---
@@ -117,6 +117,200 @@ node server.js
 ### 🟢 Dashboard
 
 * `GET /dashboard`
+
+---
+
+## 📘 API Documentation
+
+### 📝 Signup
+
+**POST /users/signup**
+
+Request:
+
+```json
+{
+  "username": "user1",
+  "email": "user@test.com",
+  "password": "123456",
+  "role": "analyst",
+  "status": "active"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "new user created",
+  "userDetails": {
+    "id": "...",
+    "username": "user1",
+    "email": "user@test.com",
+    "role": "analyst",
+    "status": "active"
+  }
+}
+```
+
+---
+
+### 🔐 Login
+
+**POST /users/login**
+
+Request:
+
+```json
+{
+  "email": "user@test.com",
+  "password": "123456"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "welcome analyst",
+  "user": {
+    "id": "...",
+    "username": "...",
+    "email": "..."
+  }
+}
+```
+
+---
+
+### ➕ Add Record
+
+**POST /records**
+
+Request:
+
+```json
+{
+  "amount": 5000,
+  "type": "income",
+  "category": "salary",
+  "notes": "monthly salary"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "Record added successfully"
+}
+```
+
+---
+
+### 📄 View Records
+
+**GET /records**
+
+Response:
+
+```json
+{
+  "message": "records fetched successfully",
+  "records": []
+}
+```
+
+---
+
+### ✏️ Update Record
+
+**PUT /records/:id**
+
+id is passed as URL parameter
+
+Example:
+
+```bash
+PUT /records/record_id_here
+```
+
+Request:
+
+```json
+{
+  "amount": 7000,
+  "category": "freelance"
+}
+```
+
+Response:
+
+```json
+{
+  "message": "record updated successfully!"
+}
+```
+
+---
+
+### ❌ Delete Record
+
+**DELETE /records/:id**
+
+id is passed as URL parameter
+
+Example:
+
+```bash
+DELETE /records/record_id_here
+```
+
+Response:
+
+```json
+{
+  "message": "record deleted successfully!"
+}
+```
+
+---
+
+### 🔍 Filter Records
+
+**GET /records/filter**
+
+Example:
+
+```bash
+GET /records/filter?type=expense&category=food&startDate=2026-04-01&endDate=2026-04-30
+```
+
+---
+
+### 📊 Dashboard
+
+**GET /dashboard**
+
+Request (admin optional):
+
+```json
+{
+  "email": "user@test.com"
+}
+```
+
+Response:
+
+```json
+{
+  "totalIncome": 7000,
+  "totalExpense": 2000,
+  "balance": 5000,
+  "categoryTotals": {},
+  "monthlyTrends": {}
+}
+```
 
 ---
 
