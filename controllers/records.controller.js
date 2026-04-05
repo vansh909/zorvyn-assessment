@@ -47,7 +47,7 @@ exports.addRecord = async (req, res) => {
       notes: data.notes,
       userId: userId,
     });
-
+    
     await newRecord.save();
 
     return res.status(201).json({
